@@ -46,7 +46,7 @@ data Query a
   | SetZoom LC.Zoom a
 
 data Message
-  = Initialized
+  = Initialized LC.Leaflet
 
 type Input = Unit
 
@@ -105,8 +105,7 @@ eval = case _ of
           >>= LC.setView state.view
           >>= LC.setZoom state.zoom
         H.modify _{ leaflet = Just leaf }
-        pure unit
-    H.raise Initialized
+        H.raise $ Initialized leaf
     pure next
   SetDimension dim next → do
     state ← H.get
