@@ -1,0 +1,18 @@
+{
+  "name": "purescript-leaflet",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "output"
+  ],
+  "dependencies": {
+    "purescript-eff": "^3.1.0",
+    "purescript-halogen": "^2.0.1",
+    "purescript-leaflet": "purescript-leafletjs#^0.1.0",
+    "purescript-halogen-css": "^6.0.0"
+  },
+  "devDependencies": {
+    "purescript-debug": "^3.0.0"
+  }
+}
