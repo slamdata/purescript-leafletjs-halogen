@@ -13,6 +13,7 @@ import Data.Int as Int
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Traversable as F
 import Data.Time.Duration (Milliseconds(..))
+import Data.Tuple (Tuple(..), fst)
 
 import DOM (DOM)
 
@@ -48,8 +49,6 @@ data Query a
 data Message
   = Initialized LC.Leaflet
 
-type Input = Unit
-
 type Effects (e ∷ # Effect) =
   ( dom ∷ DOM
   | e )
@@ -58,26 +57,37 @@ type HTML = H.ComponentHTML Query
 
 type DSL m = H.ComponentDSL State Query Message m
 
-initialState ∷ Input → State
-initialState _ =
-  { height: 400
-  , width: 600
+type Dimensions = { width ∷ Int, height ∷ Int }
+
+initialState ∷ Dimensions → State
+initialState {width, height} =
+  { height
+  , width
   , view: unsafePartial fromJust $ LC.mkLatLng (-37.87) 175.457
   , zoom: unsafePartial fromJust $ LC.mkZoom 12
   , leaflet: Nothing
   }
+
 leaflet
   ∷ ∀ e m
   . MonadAff (Effects e) m
-  ⇒ Unit
-  → H.Component HH.HTML Query Input Message m
-leaflet _ = H.lifecycleComponent
-  { initialState
+  ⇒ H.Component HH.HTML Query (Tuple Dimensions Unit) Message m
+leaflet = leaflet' $ fst >>> \dim →
+  Just $ H.action $ SetDimension { width : Just dim.width, height: Just dim.height }
+
+
+leaflet'
+  ∷ ∀ e m i
+  . MonadAff (Effects e) m
+  ⇒ (Tuple Dimensions i → Maybe (Query Unit))
+  → H.Component HH.HTML Query (Tuple Dimensions i) Message m
+leaflet' receiver = H.lifecycleComponent
+  { initialState: \(Tuple dim _) → initialState dim
   , render
   , eval
   , initializer: Just $ H.action Init
   , finalizer: Nothing
-  , receiver: const Nothing
+  , receiver
   }
 
 render ∷ State → HTML

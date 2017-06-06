@@ -15,6 +15,7 @@ import Data.Either (Either(..))
 import Data.Traversable as F
 import Data.Maybe (Maybe(..), isNothing)
 import Data.Path.Pathy ((</>), (<.>), file, currentDir, rootDir, dir)
+import Data.Tuple (Tuple(..))
 import Data.URI as URI
 import Data.URI (URIRef)
 
@@ -39,6 +40,8 @@ data Query a
 
 type State =
   { marker ∷ Maybe LC.Marker
+  , firstSize ∷ { width ∷ Int, height ∷ Int }
+  , secondSize ∷ { width ∷ Int, height ∷ Int }
   }
 
 type Input = Unit
@@ -53,6 +56,8 @@ type DSL = H.ParentDSL State Query HL.Query Slot Void MainAff
 initialState ∷ Input → State
 initialState _ =
   { marker: Nothing
+  , firstSize: { width: 400, height: 600 }
+  , secondSize: { width: 400, height: 600 }
   }
 
 ui ∷ H.Component HH.HTML Query Unit Void MainAff
@@ -66,11 +71,11 @@ ui = H.parentComponent
   render ∷ State → HTML
   render state =
     HH.div_
-      [ HH.slot 0 (HL.leaflet unit) unit (HE.input $ HandleMessage 0)
+      [ HH.slot 0 HL.leaflet (Tuple state.firstSize unit) (HE.input $ HandleMessage 0)
       , HH.button [ HE.onClick (HE.input_ SetWidth) ][ HH.text "resize me" ]
       , HH.button [ HE.onClick (HE.input_ AddMarker) ] [ HH.text "add marker" ]
       , HH.button [ HE.onClick (HE.input_ RemoveMarker) ] [ HH.text "remove marker" ]
-      , HH.slot 1 (HL.leaflet unit) unit (HE.input $ HandleMessage 1)
+      , HH.slot 1 HL.leaflet (Tuple state.secondSize unit) (HE.input $ HandleMessage 1)
       ]
 
   eval ∷ Query ~> DSL
@@ -87,7 +92,7 @@ ui = H.parentComponent
       void $ H.query 1 $ H.action $ HL.AddLayers [ LC.tileToLayer tiles, heatmap ]
       pure next
     SetWidth next → do
-      void $ H.query 0 $ H.action $ HL.SetDimension { height: Just 200, width: Just 1000 }
+      H.modify _{ firstSize = { height: 200, width: 1000 } }
       pure next
     AddMarker next → do
       state ← H.get

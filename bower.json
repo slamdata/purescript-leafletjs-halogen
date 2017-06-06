@@ -6,6 +6,11 @@
     "bower_components",
     "output"
   ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/slamdata/purescript-leafletjs-halogen.git"
+  },
   "dependencies": {
     "purescript-eff": "^3.1.0",
     "purescript-halogen": "^2.0.1",
