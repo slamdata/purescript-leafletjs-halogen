@@ -1,5 +1,5 @@
 {
-  "name": "purescript-halogen-leaflet",
+  "name": "purescript-leafletjs-halogen",
   "scripts": {
     "build": "pulp build -- --censor-lib --strict --stash",
     "build:non-strict": "pulp build",

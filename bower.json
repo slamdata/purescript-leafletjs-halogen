@@ -1,5 +1,5 @@
 {
-  "name": "purescript-halogen-leafletjs",
+  "name": "purescript-leafletjs-halogen",
   "ignore": [
     "**/.*",
     "node_modules",
