@@ -1,4 +1,4 @@
-module Halogen.Leaflet where
+module Leaflet.Halogen where
 
 import Prelude
 
@@ -89,7 +89,7 @@ render state =
     ]
     [ HH.div
       [ HP.ref $ H.RefLabel "leaflet"
-      , style do
+     , style do
           height $ pct 100.0
           width $ pct 100.0
       ] [ ] ]

@@ -25,8 +25,8 @@ import Halogen.VDom.Driver (runUI)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
-import Halogen.Leaflet as HL
 
+import Leaflet.Halogen as HL
 import Leaflet.Core as LC
 import Leaflet.Plugin.Heatmap as LH
 import Leaflet.Util ((×))
