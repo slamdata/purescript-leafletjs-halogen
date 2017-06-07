@@ -1,0 +1,24 @@
+{
+  "name": "purescript-leafletjs-halogen",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "output"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/slamdata/purescript-leafletjs-halogen.git"
+  },
+  "dependencies": {
+    "purescript-eff": "^3.1.0",
+    "purescript-halogen": "^2.0.1",
+    "purescript-leafletjs": "^0.2.0",
+    "purescript-halogen-css": "^6.0.0"
+  },
+  "devDependencies": {
+    "purescript-debug": "^3.0.0",
+    "purescript-random": "^3.0.0"
+  }
+}

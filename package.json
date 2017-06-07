@@ -1,0 +1,20 @@
+{
+  "name": "purescript-leafletjs-halogen",
+  "scripts": {
+    "build": "pulp build -- --censor-lib --strict --stash",
+    "build:non-strict": "pulp build",
+    "run:test": "pulp test -- --censor-lib --strict --stash",
+    "run": "pulp run",
+    "build:browser": "pulp browserify --include example --to example/index.js",
+    "build:webpack": "webpack",
+    "build:dev": "webpack --watch",
+    "ide": "purs ide server"
+  },
+  "dependencies": {
+    "leaflet": "^1.0.3",
+    "pulp": "^11.0.0",
+    "purescript": "^0.11.4",
+    "purescript-psa": "^0.5.1",
+    "webpack": "^2.4.1"
+  }
+}
