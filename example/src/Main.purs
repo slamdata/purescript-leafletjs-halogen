@@ -14,8 +14,9 @@ import Data.Array as A
 import Data.Either (Either(..))
 import Data.Traversable as F
 import Data.Maybe (Maybe(..), isNothing)
+import Data.Newtype (under)
 import Data.Path.Pathy ((</>), (<.>), file, currentDir, rootDir, dir)
-import Data.Tuple (Tuple(..))
+import Data.Profunctor (lmap)
 import Data.URI as URI
 import Data.URI (URIRef)
 
@@ -23,6 +24,8 @@ import Graphics.Canvas (CANVAS)
 
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
+import Halogen.Component as HC
+import Halogen.Component.Profunctor as HPR
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -68,14 +71,20 @@ ui = H.parentComponent
   , receiver: const Nothing
   }
   where
+  leaflet =
+    HC.unComponent (\cfg →
+      HC.mkComponent cfg{ receiver = \{width, height} →
+        Just $ H.action $ HL.SetDimension { width: Just width, height: Just height } } )
+    $ under HPR.ProComponent (lmap $ const unit) HL.leaflet
+
   render ∷ State → HTML
   render state =
     HH.div_
-      [ HH.slot 0 HL.leaflet (Tuple state.firstSize unit) (HE.input $ HandleMessage 0)
+      [ HH.slot 0 leaflet state.firstSize (HE.input $ HandleMessage 0)
       , HH.button [ HE.onClick (HE.input_ SetWidth) ][ HH.text "resize me" ]
       , HH.button [ HE.onClick (HE.input_ AddMarker) ] [ HH.text "add marker" ]
       , HH.button [ HE.onClick (HE.input_ RemoveMarker) ] [ HH.text "remove marker" ]
-      , HH.slot 1 HL.leaflet (Tuple state.secondSize unit) (HE.input $ HandleMessage 1)
+      , HH.slot 1 leaflet state.secondSize (HE.input $ HandleMessage 1)
       ]
 
   eval ∷ Query ~> DSL
