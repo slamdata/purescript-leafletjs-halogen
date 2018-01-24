@@ -2,36 +2,32 @@ module Main where
 
 import Prelude
 
-import Control.MonadPlus (class MonadPlus)
-import Control.Monad.Aff (Aff)
+import Control.Monad.Aff (Aff, Error, error, throwError)
 import Control.Monad.Aff.Class (class MonadAff, liftAff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Random (RANDOM, random)
+import Control.Monad.Error.Class (class MonadError)
 import Control.Monad.Rec.Class (class MonadRec)
-
 import Data.Array as A
 import Data.Either (Either(..))
-import Data.Traversable as F
-import Data.Maybe (Maybe(..), isNothing)
+import Data.Maybe (Maybe(Nothing, Just), isNothing, maybe)
 import Data.Newtype (under)
 import Data.Path.Pathy ((</>), (<.>), file, currentDir, rootDir, dir)
 import Data.Profunctor (lmap)
-import Data.URI as URI
+import Data.Traversable as F
 import Data.URI (URIRef)
-
+import Data.URI as URI
 import Graphics.Canvas (CANVAS)
-
+import Halogen as H
 import Halogen.Aff as HA
-import Halogen.VDom.Driver (runUI)
 import Halogen.Component as HC
 import Halogen.Component.Profunctor as HPR
-import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
-
-import Leaflet.Halogen as HL
+import Halogen.VDom.Driver (runUI)
 import Leaflet.Core as LC
+import Leaflet.Halogen as HL
 import Leaflet.Plugin.Heatmap as LH
 import Leaflet.Util ((×))
 
@@ -106,7 +102,7 @@ ui = H.parentComponent
     AddMarker next → do
       state ← H.get
       when (isNothing state.marker) do
-        latLng ← liftAff $ LC.mkLatLng (-37.87) 175.457
+        latLng ← liftAff $ throwMaybe $ LC.mkLatLng (-37.87) 175.457
         icon ← LC.icon iconConf
         marker ← LC.marker latLng >>= LC.setIcon icon
         H.modify _{ marker = Just marker }
@@ -141,20 +137,23 @@ ui = H.parentComponent
   mkHeatmapData
     ∷ ∀ m
     . MonadAff Effects m
-    ⇒ MonadPlus m
     ⇒ MonadRec m
+    ⇒ MonadError Error m
     ⇒ m (Array { lat ∷ LC.Degrees, lng ∷ LC.Degrees, i ∷ Number })
   mkHeatmapData = do
     let
       inp = A.range 0 10000
       foldFn acc _ = do
         xDiff ← liftEff random
-        lat ← LC.mkDegrees $ xDiff / 30.0 - 37.87
+        lat ← throwMaybe (LC.mkDegrees $ xDiff / 30.0 - 37.87)
         yDiff ← liftEff random
-        lng ← LC.mkDegrees $ yDiff / 40.0 + 175.457
+        lng ← throwMaybe (LC.mkDegrees $ yDiff / 40.0 + 175.457)
         i ← map (_ / 2.0) $ liftEff random
         pure $ A.snoc acc { lat, lng, i }
     A.foldRecM foldFn [] inp
+
+throwMaybe ∷ ∀ a m. MonadError Error m ⇒ Maybe a → m a
+throwMaybe = maybe (throwError (error "throwMaybe")) pure
 
 main ∷ Eff Effects Unit
 main = HA.runHalogenAff $ runUI ui unit =<< HA.awaitBody
