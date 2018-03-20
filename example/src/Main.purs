@@ -13,11 +13,11 @@ import Data.Array as A
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(Nothing, Just), isNothing, maybe)
 import Data.Newtype (under)
-import Data.Path.Pathy ((</>), (<.>), file, currentDir, rootDir, dir)
 import Data.Profunctor (lmap)
+import Data.String.NonEmpty as NES
+import Data.These (These(..))
 import Data.Traversable as F
-import Data.URI (URIRef)
-import Data.URI as URI
+import Data.Tuple (Tuple(..))
 import Graphics.Canvas (CANVAS)
 import Halogen as H
 import Halogen.Aff as HA
@@ -26,10 +26,42 @@ import Halogen.Component.Profunctor as HPR
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.VDom.Driver (runUI)
+import Leaflet.Core (LeafURIRef, mkLeafURIRef)
 import Leaflet.Core as LC
 import Leaflet.Halogen as HL
 import Leaflet.Plugin.Heatmap as LH
 import Leaflet.Util ((×))
+import Partial.Unsafe (unsafePartial)
+import URI (Authority(..), Fragment, HierPath, HierarchicalPart(..), Host(..), Path(..), PathAbsolute(..), Port, Query, RelPath, RelativePart(..), RelativeRef(..), URI(..), URIRef, UserInfo) as URI
+import URI.Host.RegName as RegName
+import URI.HostPortPair (HostPortPair) as URI
+import URI.HostPortPair as HostPortPair
+import URI.Path.Segment (segmentNZFromString)
+import URI.Path.Segment as PathSegment
+import URI.Scheme.Common as Scheme
+import URI.URIRef (URIRefOptions) as URI
+
+
+type MainURIRef = URI.URIRef URI.UserInfo (URI.HostPortPair URI.Host URI.Port) URI.Path URI.HierPath URI.RelPath URI.Query URI.Fragment
+
+mainURIRefOptions ∷ Record (URI.URIRefOptions URI.UserInfo (URI.HostPortPair URI.Host URI.Port) URI.Path URI.HierPath URI.RelPath URI.Query URI.Fragment)
+mainURIRefOptions =
+  { parseUserInfo: pure
+  , printUserInfo: id
+  , parseHosts: HostPortPair.parser pure pure
+  , printHosts: HostPortPair.print id id
+  , parsePath: pure
+  , printPath: id
+  , parseHierPath: pure
+  , printHierPath: id
+  , parseRelPath: pure
+  , printRelPath: id
+  , parseQuery: pure
+  , printQuery: id
+  , parseFragment: pure
+  , printFragment: id
+  }
+
 
 data Query a
   = HandleMessage Slot HL.Message a
@@ -115,24 +147,29 @@ ui = H.parentComponent
         H.modify _{ marker = Nothing }
       pure next
 
-  iconConf ∷ { iconUrl ∷ URIRef, iconSize ∷ LC.Point }
+  iconConf ∷ { iconUrl ∷ LeafURIRef, iconSize ∷ LC.Point }
   iconConf =
-    { iconUrl: Right $ URI.RelativeRef
-        (URI.RelativePart Nothing $ Just $ Right $ currentDir </> file "marker" <.> "svg")
+    { iconUrl: mkLeafURIRef
+      { uri: Right $ URI.RelativeRef
+        (URI.RelativePartNoAuth $ Just $ Left $ URI.PathAbsolute $ Just $ Tuple (segmentNZFromString $ unsafePartial $ NES.unsafeFromString "marker.svg") [])
         Nothing
         Nothing
+      , opts: mainURIRefOptions
+      }
     , iconSize: 40 × 40
     }
 
-  osmURI ∷ URIRef
-  osmURI =
-    Left $ URI.URI
-    (Just $ URI.Scheme "http")
-    (URI.HierarchicalPart
-     (Just $ URI.Authority Nothing [(URI.NameAddress "{s}.tile.osm.org") × Nothing])
-     (Just $ Right $ rootDir </> dir "{z}" </> dir "{x}" </> file "{y}" <.> "png"))
-    Nothing
-    Nothing
+  osmURI ∷ LeafURIRef
+  osmURI = mkLeafURIRef
+    { uri: Left $ URI.URI
+      Scheme.http
+      (URI.HierarchicalPartAuth
+        (URI.Authority Nothing (Just $ This $ URI.NameAddress $ RegName.fromString $ unsafePartial $ NES.unsafeFromString "{s}.tile.osm.org"))
+        (URI.Path $ map PathSegment.segmentFromString ["{z}", "{x}", "{y}.png"]))
+      Nothing
+      Nothing
+    , opts: mainURIRefOptions
+    }
 
   mkHeatmapData
     ∷ ∀ m
