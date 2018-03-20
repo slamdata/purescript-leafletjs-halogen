@@ -14,7 +14,7 @@
   "dependencies": {
     "purescript-eff": "^3.1.0",
     "purescript-halogen": "^3.1.1",
-    "purescript-leafletjs": "^5.0.0",
+    "purescript-leafletjs": "^6.0.0",
     "purescript-halogen-css": "^7.0.0"
   },
   "devDependencies": {
