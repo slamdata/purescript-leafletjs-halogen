@@ -9,6 +9,9 @@ import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Random (RANDOM, random)
 import Control.Monad.Error.Class (class MonadError)
 import Control.Monad.Rec.Class (class MonadRec)
+import CSS (CSS)
+import CSS.Geometry (width, height)
+import CSS.Size (px, pct)
 import Data.Array as A
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(Nothing, Just), isNothing, maybe)
@@ -101,14 +104,17 @@ ui = H.parentComponent
   where
   leaflet =
     HC.unComponent (\cfg →
-      HC.mkComponent cfg{ receiver = \{width, height} →
-        Just $ H.action $ HL.SetDimension { width: Just width, height: Just height } } )
+      HC.mkComponent cfg{ receiver = \{w, h} →
+        Just $ H.action $ HL.SetStyle do
+          width (px w)
+          height (px h)
+    } )
     $ under HPR.ProComponent (lmap $ const unit) HL.leaflet
 
   render ∷ State → HTML
   render state =
     HH.div_
-      [ HH.slot 0 leaflet state.firstSize (HE.input $ HandleMessage 0)
+      [ HH.slot 0 leaflet Nothing (HE.input $ HandleMessage 0)
       , HH.button [ HE.onClick (HE.input_ SetWidth) ][ HH.text "resize me" ]
       , HH.button [ HE.onClick (HE.input_ AddMarker) ] [ HH.text "add marker" ]
       , HH.button [ HE.onClick (HE.input_ RemoveMarker) ] [ HH.text "remove marker" ]
