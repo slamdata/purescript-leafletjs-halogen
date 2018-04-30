@@ -5,14 +5,18 @@ import Prelude
 import Control.Monad.Eff (kind Effect)
 import Control.Monad.Aff (delay)
 import Control.Monad.Aff.Class (class MonadAff, liftAff)
+import Control.Monad.Writer (writer)
 
+import CSS (CSS)
 import CSS.Geometry (width, height)
 import CSS.Size (px, pct)
+import CSS.Stylesheet (StyleM(S))
 
 import Data.Int as Int
-import Data.Maybe (Maybe(..), fromJust)
+import Data.Maybe (Maybe(..), fromJust, maybe)
 import Data.Traversable as F
 import Data.Time.Duration (Milliseconds(..))
+import Data.Tuple (Tuple(..))
 
 import DOM (DOM)
 
@@ -27,8 +31,7 @@ import Leaflet.Util ((∘))
 import Partial.Unsafe (unsafePartial)
 
 type State =
-  { width ∷ Int
-  , height ∷ Int
+  { style ∷ CSS
   , view ∷ LC.LatLng
   , zoom ∷ LC.Zoom
   , leaflet ∷ Maybe LC.Leaflet
@@ -36,7 +39,7 @@ type State =
 
 data Query a
   = Init a
-  | SetDimension { width ∷ Maybe Int, height ∷ Maybe Int } a
+  | SetStyle CSS a
     -- Note, layers are not preserved in state, parent component must
     -- handle it.
   | AddLayers (Array LC.Layer) a
@@ -56,12 +59,9 @@ type HTML = H.ComponentHTML Query
 
 type DSL m = H.ComponentDSL State Query Message m
 
-type Input = Unit
-
-initialState ∷ ∀ i. i → State
-initialState i =
-  { height: 400
-  , width: 600
+initialState ∷ Maybe CSS → State
+initialState css =
+  { style: maybe (S (writer (Tuple unit []))) id css
   , view: unsafePartial fromJust $ LC.mkLatLng (-37.87) 175.457
   , zoom: unsafePartial fromJust $ LC.mkZoom 12
   , leaflet: Nothing
@@ -70,7 +70,7 @@ initialState i =
 leaflet
   ∷ ∀ e m
   . MonadAff (Effects e) m
-  ⇒ H.Component HH.HTML Query Input Message m
+  ⇒ H.Component HH.HTML Query (Maybe CSS) Message m
 leaflet = H.lifecycleComponent
   { initialState
   , render
@@ -83,10 +83,7 @@ leaflet = H.lifecycleComponent
 render ∷ State → HTML
 render state =
   HH.div
-    [ style do
-        height $ px $ Int.toNumber state.height
-        width $ px $ Int.toNumber state.width
-    ]
+    [ style state.style ]
     [ HH.div
       [ HP.ref $ H.RefLabel "leaflet"
      , style do
@@ -107,15 +104,9 @@ eval = case _ of
         H.modify _{ leaflet = Just leaf }
         H.raise $ Initialized leaf
     pure next
-  SetDimension dim next → do
+  SetStyle s next → do
     state ← H.get
-    F.for_ dim.height \h →
-      when (h >= 0) $ H.modify _{ height = h }
-    F.for_ dim.width \w →
-      when (w >= 0) $ H.modify _{ width = w }
-    F.for_ state.leaflet \l → do
-      liftAff $ delay $ Milliseconds 1000.0
-      LC.invalidateSize true l
+    H.modify _{ style = s }
     pure next
   AddLayers ls next → do
     state ← H.get

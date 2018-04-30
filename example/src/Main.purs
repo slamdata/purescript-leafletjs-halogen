@@ -9,6 +9,9 @@ import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Random (RANDOM, random)
 import Control.Monad.Error.Class (class MonadError)
 import Control.Monad.Rec.Class (class MonadRec)
+import CSS (CSS)
+import CSS.Geometry (width, height) as CSSG
+import CSS.Size (px, pct)
 import Data.Array as A
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(Nothing, Just), isNothing, maybe)
@@ -71,8 +74,8 @@ data Query a
 
 type State =
   { marker ∷ Maybe LC.Marker
-  , firstSize ∷ { width ∷ Int, height ∷ Int }
-  , secondSize ∷ { width ∷ Int, height ∷ Int }
+  , firstSize ∷ { width ∷ Number, height ∷ Number }
+  , secondSize ∷ { width ∷ Number, height ∷ Number }
   }
 
 type Input = Unit
@@ -87,8 +90,8 @@ type DSL = H.ParentDSL State Query HL.Query Slot Void MainAff
 initialState ∷ Input → State
 initialState _ =
   { marker: Nothing
-  , firstSize: { width: 400, height: 600 }
-  , secondSize: { width: 400, height: 600 }
+  , firstSize: { width: 400.0, height: 600.0 }
+  , secondSize: { width: 400.0, height: 600.0 }
   }
 
 ui ∷ H.Component HH.HTML Query Unit Void MainAff
@@ -102,8 +105,11 @@ ui = H.parentComponent
   leaflet =
     HC.unComponent (\cfg →
       HC.mkComponent cfg{ receiver = \{width, height} →
-        Just $ H.action $ HL.SetDimension { width: Just width, height: Just height } } )
-    $ under HPR.ProComponent (lmap $ const unit) HL.leaflet
+        Just $ H.action $ HL.SetStyle do
+          CSSG.width (px width)
+          CSSG.height (px height)
+    } )
+    $ under HPR.ProComponent (lmap $ const Nothing) HL.leaflet
 
   render ∷ State → HTML
   render state =
@@ -129,7 +135,7 @@ ui = H.parentComponent
       void $ H.query 1 $ H.action $ HL.AddLayers [ LC.tileToLayer tiles, heatmap ]
       pure next
     SetWidth next → do
-      H.modify _{ firstSize = { height: 200, width: 1000 } }
+      H.modify _{ firstSize = { height: 200.0, width: 1000.0 } }
       pure next
     AddMarker next → do
       state ← H.get
